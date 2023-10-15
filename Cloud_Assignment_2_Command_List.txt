@@ -1,0 +1,78 @@
+Load files to HDFS
+1- hdfs dfs -copyFromLocal /home/Day_Dataset /
+2- hdfs dfs -ls  /Day_Dataset Sagla data distoy 
+
+Pig commands for Data Analytics application 
+
+1- Loading the data into Pig
+	ACC_day_data = load '/Day_Dataset/ACC_day_data.csv' USING org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'YES_MULTILINE', 'UNIX', 'SKIP_INPUT_HEADER') as (ID:chararray, date:Datetime, close:double, high:double, low:double, open:double, volume:int);
+	ADANIENT_day_data = load '/Day_Dataset/ADANIENT_day_data.csv ' USING org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'YES_MULTILINE', 'UNIX', 'SKIP_INPUT_HEADER') as (ID:chararray, date:Datetime, close:double, high:double, low:double, open:double, volume:int);
+	.
+	.
+	.
+	.
+	WIPRO_day_data = load '/Day_Dataset/WIPRO_day_data.csv ' USING org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'YES_MULTILINE', 'UNIX', 'SKIP_INPUT_HEADER') as (ID:chararray, date:Datetime, close:double, high:double, low:double, open:double, volume:int);
+	YESBANK_day_data = load '/Day_Dataset/YESBANK_day_data.csv ' USING org.apache.pig.piggybank.storage.CSVExcelStorage(',', 'YES_MULTILINE', 'UNIX', 'SKIP_INPUT_HEADER') as (ID:chararray, date:Datetime, close:double, high:double, low:double, open:double, volume:int);
+
+
+2- 	Appending the column name 
+	ACC_day_data_append = FOREACH ACC_day_data GENERATE CONCAT ('ACC_Day_Data_',ID) as (ID:chararray),date,close,high,low,open,volume;
+	ADANIENT_day_data_append = FOREACH ADANIENT_day_data GENERATE CONCAT ('ADANIENT_day_data_',ID) as (ID:chararray),date,close,high,low,open,volume;
+	.
+	.
+	.
+	.
+	WIPRO_day_data_append = FOREACH WIPRO_day_data GENERATE CONCAT ('WIPRO_day_data_',ID) as (ID:chararray),date,close,high,low,open,volume;
+	YESBANK_day_data_append = FOREACH YESBANK_day_data GENERATE CONCAT ('YESBANK_day_data_',ID) as (ID:chararray),date,close,high,low,open,volume;
+	
+3- Combining all the data together
+	combined_day_data = UNION ADANIENT_day_data_append,ACC_day_data_append,ADANIGREEN_day_data_append,ADANIPORTS_day_data_append,
+						AMBUJACEM_day_data_append,APOLLOHOSP_day_data_append,ASIANPAINT_day_data_append,AUROPHARMA_day_data_append,AXISBANK_day_data_append,
+						BAJAJAUTO_day_data_append,BAJAJFINSV_day_data_append,BAJAJHLDNG_day_data_append,BAJFINANCE_day_data_append,BANDHANBNK_day_data_append,
+						BANKBARODA_day_data_append,BERGEPAINT_day_data_append,BHARTIARTL_day_data_append,BIOCON_day_data_append,BOSCHLTD_day_data_append,BPCL_day_data_append,
+						BRITANNIA_day_data_append,CHOLAFIN_day_data_append,CIPLA_day_data_append,COALINDIA_day_data_append,COLPAL_day_data_append,DABUR_day_data_append,
+						DIVISLAB_day_data_append,DLF_day_data_append,DMART_day_data_append,DRREDDY_day_data_append,EICHERMOT_day_data_append,GAIL_day_data_append,
+						GLAND_day_data_append,GODREJCP_day_data_append,GRASIM_day_data_append,HAVELLS_day_data_append,HCLTECH_day_data_append,HDFCAMC_day_data_append,
+						HDFCBANK_day_data_append,HDFCLIFE_day_data_append,HDFC_day_data_append,HEROMOTOCO_day_data_append,HINDALCO_day_data_append,HINDPETRO_day_data_append,
+						HINDUNILVR_day_data_append,ICICIBANK_day_data_append,ICICIGI_day_data_append,ICICIPRULI_day_data_append,IGL_day_data_append,INDIGO_day_data_append,
+						INDUSINDBK_day_data_append,INDUSTOWER_day_data_append,INFY_day_data_append,IOC_day_data_append,ITC_day_data_append,JINDALSTEL_day_data_append,
+						JSWSTEEL_day_data_append,JUBLFOOD_day_data_append,KOTAKBANK_day_data_append,LICI_day_data_append,LTI_day_data_append,LT_day_data_append,
+						LUPIN_day_data_append,MARICO_day_data_append,MARUTI_day_data_append,MCDOWELLN_day_data_append,MM_day_data_append,MUTHOOTFIN_day_data_append,
+						NAUKRI_day_data_append,NESTLEIND_day_data_append,NIFTY_50_day_data_append,NIFTY_BANK_day_data_append,NMDC_day_data_append,NTPC_day_data_append,
+						ONGC_day_data_append,PEL_day_data_append,PGHH_day_data_append,PIDILITIND_day_data_append,PIIND_day_data_append,PNB_day_data_append,
+						POWERGRID_day_data_append,RELIANCE_day_data_append,SAIL_day_data_append,SBICARD_day_data_append,SBILIFE_day_data_append,SBIN_day_data_append,
+						SHREECEM_day_data_append,SIEMENS_day_data_append,SUNPHARMA_day_data_append,TATACONSUM_day_data_append,TATAMOTORS_day_data_append,
+						TATASTEEL_day_data_append,TCS_day_data_append,TECHM_day_data_append,TITAN_day_data_append,TORNTPHARM_day_data_append,ULTRACEMCO_day_data_append,
+						UPL_day_data_append,VEDL_day_data_append,WIPRO_day_data_append,YESBANK_day_data_append;
+						
+4- Storing Combined Data into HDFS for further use in Hive
+	store combined_day_data into 'hdfs://cluster-group17-m/Pigresult1' using PigStorage(,);
+	
+Note - All above commands are runned through pig script 
+
+5- Command to run pig script
+	Open pig 
+	grunt> exec hdfs://cluster-group17-m/dataloadandappend.pig
+	
+
+Hive commands 
+1- Hive create table command for Pig output 
+	create external table if not exists Day_Data (ID string,dated timestamp,close double,high double,low double,open double,volume int) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+
+2- loading data to hive from pig result
+	LOAD DATA INPATH 'hdfs://cluster-group17-m/Pigresult1/part-m-00000' INTO TABLE Day_Data;
+	.
+	.
+	.
+	.
+	LOAD DATA INPATH 'hdfs://cluster-group17-m/Pigresult1/part-m-00100' INTO TABLE Day_Data;
+	
+3- To check the count of row into loaded DATA
+	select count(*) from day_data;
+
+4- To check data uploaded correctly or not
+	select * from day_data;
+	
+Note - All the above things are runned through python script in which spark is used.
+	
+	

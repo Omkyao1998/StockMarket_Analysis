@@ -1,0 +1,105 @@
+wget https://github.com/sachinrkp/stackoverflow_dataset/raw/main/Phonesdata1.csv
+wget https://github.com/prasad1825/CA675-Assignment2/raw/main/Data%20Cleaning/piggybank.jar
+hadoop fs -mkdir /pig
+hadoop fs -cp 'gs://cockroach_bucket2022/phonesrcfile/Phonesdata1.csv' /pig
+
+--pig
+register /home/sachin_patel3/pig/piggybank.jar
+
+PhonesDataLoad = Load 'hdfs://sachinrkpcluster-3937-m/pig/Phonesdata1.csv' USING org.apache.pig.piggybank.storage.CSVExcelStorage(',','YES_MULTILINE') AS (ID:chararray,uid:chararray,reviewerID:chararray,asin:chararray,reviewerName:chararray,helpful:chararray,reviewText:chararray,overall:chararray,summary:chararray,unixReviewTime:chararray,reviewTime:chararray,category:chararray,class:chararray);
+
+--PhonesDataGenerate = FOREACH PhonesDataLoad GENERATE ID,reviewerID,asin,REPLACE(reviewerName,'"','') as reviewerName,REPLACE(helpful,',',' ') as helpful,REPLACE(reviewText,',',' ') as reviewText,overall,REPLACE(summary,',',' ') as summary;
+
+PhonesDataGenerate = FOREACH PhonesDataLoad GENERATE ID,reviewerID,asin,reviewerName,helpful,reviewText,overall,summary;
+
+PhonesDatafilter_notnull = FILTER PhonesDataGenerate by NOT ((ID IS NULL) OR (reviewerID IS NULL) OR (asin IS NULL) OR (reviewerName IS NULL) OR (helpful IS NULL) OR (reviewText IS NULL) OR (overall IS NULL) OR (summary IS NULL));
+
+PhonesDatafilter_notnull_notblank = FILTER PhonesDatafilter_notnull  by NOT ((ID =='') OR (reviewerID  =='') OR (asin  =='') OR (reviewerName =='')   OR (helpful =='') OR  (reviewText =='')  OR (overall =='') OR (summary ==''));
+
+PhonesDatafilter_notnull_notblank_na = FILTER PhonesDatafilter_notnull_notblank  by NOT ((ID =='N/A') OR (reviewerID  =='N/A') OR (asin  =='N/A') OR (reviewerName =='N/A')   OR (helpful =='N/A') OR  (reviewText =='N/A')  OR (overall =='N/A') OR (summary =='N/A'));
+
+STORE PhonesDatafilter_notnull_notblank_na INTO '/hivefiles18' USING org.apache.pig.piggybank.storage.CSVExcelStorage(',','YES_MULTILINE');
+
+________________________________________________________________________
+--hadoop
+
+hadoop fs -ls /hivefiles18/
+
+hadoop fs -rm /hivefiles18/_SUCCESS
+
+hadoop fs -getmerge /hivefiles18/ /home/sachin_patel3/cleaneddataset/phonesdata1-clean.csv
+
+hadoop fs -put phonesdata1-clean.csv 'gs://cockroach_bucket2022/cleanedcsv/'
+_______________________________________________________________________________________________________
+
+--hive 
+
+CREATE DATABASE cloud_db;
+
+USE cloud_db;
+
+CREATE external TABLE IF not exists phonesdata (ID string, reviewerID string, asin string, reviewerName string,helpful string, reviewText string,overall string, summary string) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde' WITH SERDEPROPERTIES ("separatorChar"= ",", "quoteChar" = "\"") LOCATION '/home/sachin_patel3/cleaneddataset/phonesdata1-clean.csv' tblproperties("skip.header.line.count"="1");
+
+Load data local inpath '/home/sachin_patel3/cleaneddataset/phonesdata1-clean.csv' overwrite into table phonesdata;
+
+SET hive.cli.print.header =true;
+
+set hive.execution.engine=mr;
+
+select * from phonesdata limit 2;
+
+select count(id) as no_of_records from phonesdata;
+
+--ID,reviewerID,asin,reviewerName,helpful,reviewText,overall,summary
+
+select helpful from phonesdata order by helpful desc limit 10;
+
+select ID,reviewerID,reviewerName,helpful,overall from phonesdata order by helpful desc limit 10;
+
+_____________________________________________________________________________________________________
+
+CREATE TABLE cloud_db.spam AS select ID,reviewerID,reviewerName,helpful,overall,summary,reviewText from cloud_db.phonesdata  where 
+(LOWER(summary) LIKE '%great%' 
+OR LOWER(summary) LIKE '%battery%' 
+OR LOWER(summary) LIKE '%phone%' 
+OR LOWER(summary) LIKE '%product%'
+OR UPPER(summary) LIKE '%GREAT%'
+OR UPPER(summary) LIKE '%BATTERY%'
+OR UPPER(summary) LIKE '%PHONE%'
+OR UPPER(summary) LIKE '%PRODUCT%')
+AND overall in ('4','5');
+
+CREATE TABLE cloud_db.ham AS select ID,reviewerID,reviewerName,helpful,overall,summary,reviewText from cloud_db.phonesdata where id not in (select id from cloud_db.spam) AND overall in ('1','2','3');
+
+select ID,reviewerID,reviewerName,helpful,overall,summary from cloud_db.ham order by helpful desc limit 10;
+
+select ID,reviewerID,reviewerName,helpful,overall,summary from cloud_db.spam order by helpful desc limit 10;
+
+-- for copying file from bucket to hadoop file system
+hadoop fs -cp 'gs://cockroach_bucket2022/phonesrcfile/bag1.csv' /pig
+-- for copying file from hadoop file system  to local directory
+hadoop fs -get /pig/bag1.csv /home/sachin_patel3/cleaneddataset/bag1.csv
+
+CREATE external TABLE IF not exists bag (bag string) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde' WITH SERDEPROPERTIES ("separatorChar"= ",", "quoteChar" = "\"") LOCATION '/home/sachin_patel3/cleaneddataset/bag1.csv' tblproperties("skip.header.line.count"="1");
+
+Load data local inpath '/home/sachin_patel3/cleaneddataset/bag1.csv' overwrite into table bag;
+
+create table wordcount as select word from (select explode (split(LCASE(REGEXP_REPLACE(summary,'[\\p{Punct},\\p{Cntrl}]','')),' ')) as word from cloud_db.phonesdata) words;
+
+create table counter as select word, COUNT(*) AS count FROM (SELECT * FROM wordcount LEFT OUTER JOIN bag on (wordcount.word = bag.bag) WHERE bag IS NULL) removestopwords GROUP BY word ORDER BY count DESC, word ASC;
+
+------------------------------------
+
+
+
+--hadoop jar /home/sachin_patel3/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.4.jar wordcount /input /output
+
+--hadoop fs -cp 'gs://cockroach_bucket2022/Extra/cleanedcsv_phonesdata1-clean.txt' /input
+
+-- for copying file from bucket to hadoop file system
+hadoop fs -cp 'gs://cockroach_bucket2022/phonesrcfile/bag1.csv' /pig
+-- for copying file from hadoop file system  to local directory
+hadoop fs -get /pig/bag1.csv /home/sachin_patel3/cleaneddataset/bag1.csv
+--for copying local file system to google bucket
+hadoop fs -put phonesdata1-clean.csv 'gs://cockroach_bucket2022/cleanedcsv/'
+
