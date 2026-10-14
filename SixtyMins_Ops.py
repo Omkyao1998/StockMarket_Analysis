@@ -31,7 +31,8 @@ stock_volume_data = SixtyMinData_Hive_DF_final.filter(SixtyMinData_Hive_DF_final
 
 spark.stop()
 
-def question4:
+def hourly_volume(spark, date_value, stock_name):
+    """Show hourly traded volume for one stock on one date."""
     # Uploading Day Data from Hive to DataFrame
     SixtyMinData_Hive_DF = spark.sql("select * from 60min_data_view;")
 
@@ -49,4 +50,4 @@ def question4:
     SixtyMinData_Hive_DF_final.printSchema()
 
     # Display Stock volume data on a given day per hour per stock
-    stock_volume_data = SixtyMinData_Hive_DF_final.filter(SixtyMinData_Hive_DF_final.date_data == dateQuestion2).filter(SixtyMinData_Hive_DF_final.stock == "stockName").select("stock","date_data","time_data","volume").show()
+    stock_volume_data = SixtyMinData_Hive_DF_final.filter(SixtyMinData_Hive_DF_final.date_data == date_value).filter(SixtyMinData_Hive_DF_final.stock == stock_name).select("stock","date_data","time_data","volume").show()

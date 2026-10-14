@@ -133,5 +133,7 @@ stock_data_limit = spark.sql("select * from 60min_data limit 10;").show()
 
 
 
-WITH ans AS (SELECT stock, dated, difference ROW_NUMBER() OVER (PARTITION BY stock ORDER BY difference DESC) AS rn FROM D_day_data_view) SELECT stock, dated, difference FROM ans WHERE rn = 1 order by difference desc limit 20;
-WITH ans AS (SELECT stock, dated, difference ROW_NUMBER() OVER (PARTITION BY stock ORDER BY difference DESC) AS rn FROM D_day_Data_view) SELECT stock, dated, difference FROM ans WHERE rn = 1 ORDER BY difference DESC limit 20;
+# Draft query (Hive SQL, run in the Hive shell):
+# WITH ans AS (SELECT stock, dated, difference, ROW_NUMBER() OVER (PARTITION BY stock ORDER BY difference DESC) AS rn FROM D_day_data_view) SELECT stock, dated, difference FROM ans WHERE rn = 1 order by difference desc limit 20;
+# Draft query (Hive SQL, run in the Hive shell):
+# WITH ans AS (SELECT stock, dated, difference, ROW_NUMBER() OVER (PARTITION BY stock ORDER BY difference DESC) AS rn FROM D_day_Data_view) SELECT stock, dated, difference FROM ans WHERE rn = 1 ORDER BY difference DESC limit 20;
